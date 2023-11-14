@@ -25,6 +25,14 @@ func (n *Node) UpdateCapacity() {
 	n.capacity++
 }
 
+func (n *Node) IncreaseCapacity(increase int) {
+	n.capacity += increase
+}
+
+func (n *Node) DecreaseCapacity(decrease int) {
+	n.capacity -= decrease
+}
+
 // insert sorted key
 func InsertIndex(slice []Key, index int, insert Key) []Key {
 	if len(slice)-1 < index {
@@ -71,9 +79,49 @@ func (t *Tree) Insert(key int) {
 
 	root.AppendKey(key, index) // add new key
 
-	if root.capacity < t.degree {
+	if root.capacity > t.degree-1 {
+		root.Split(t.degree, t.memory) //&t.memory????
 		//dovrsiti djeljenje
 	}
+}
+
+// need to write better
+func (n *Node) Split(degree int, memory []*Node) {
+	left, newRoot, right := n.SplitNode(degree)
+
+	// make left node and append new keys
+	memory = append(memory, NewNode(degree))
+	memory[len(memory)-1].AppendMany(left)
+
+	if n.prevues == nil {
+		memory = append(memory, NewNode(degree))
+		memory[0], memory[len(memory)-1] = memory[len(memory)-1], memory[0] //swap
+		memory[0].Append(newRoot.value, 0)
+	}
+
+	memory[0].nextNode[memory[0].capacity] = memory[len(memory)-2]
+	memory[0].nextNode[memory[0].capacity+1] = n
+	memory[0].UpdateCapacity()
+
+	n.key = right //update current node
+
+	n.DecreaseCapacity(degree - len(n.key))
+	n.UpdatePrevues(memory[0])
+	memory[len(memory)-2].UpdatePrevues(memory[0])
+}
+
+func (n *Node) UpdatePrevues(prevues *Node) {
+	n.prevues = prevues
+}
+
+func (n *Node) AppendMany(keys []Key) {
+	n.key = append(n.key, keys...)
+	n.capacity += len(keys)
+}
+
+func (n Node) SplitNode(degree int) ([]Key, Key, []Key) {
+	splitting := degree / 2 //split node on three pear
+	return n.key[:splitting], n.key[splitting], n.key[splitting+1:]
 }
 
 // Search finds the position of the key in the B-tree node.
